@@ -1,0 +1,398 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		
+		<title>Trello Report Generator</title>
+		
+		<script src="js/jquery-2.0.3.js"></script>
+		<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+		<script src="https://api.trello.com/1/client.js?key=7de7aa03bc8c09f287f59f1354fcdf4d"></script>
+		
+		<script type="text/javascript">
+			
+			var trelloAPIKey = "XXX";
+			var trelloSecretAPIKey = "XXX";
+			
+			var selectedBoard;
+			var lists;
+			var actions;
+			var members;
+			var cards;
+			
+			function authorize()
+			{
+				Trello.authorize
+				({
+					type:"popup"
+					, interactive:true
+					, name: "Trello Reports"
+					, success: onAuthorization
+					, error: onAuthorizationError
+				});
+				
+				
+			}
+			
+			var onAuthorization = function()
+			{
+				Trello.members.get("my/boards/all"
+					, function(boards)
+					{
+						parseBoards(boards);
+					}
+				);
+			}
+			
+			var onAuthorizationError = function()
+			{
+				alert("Not Authorized!");
+			}
+			
+			function prepareReport(clean)
+			{
+				
+				if(clean)
+				{
+					selectedBoard = null;
+					lists = null;
+					actions = null;
+					members = null;
+					cards = null;
+				}
+				
+				$("#data").empty();
+				
+				var boardId = $("#selected_board").val();
+				
+				if(selectedBoard == null)
+				{
+				
+					Trello.boards.get(boardId
+						, function(board)
+						{
+							parseBoard(board);
+						}
+					);
+				}
+				
+				if(lists == null)
+				{
+				
+					Trello.boards.get(boardId + "/lists"
+						, function(lists)
+						{
+							parseLists(lists);
+						}
+					);
+				}
+				
+				if(actions == null)
+				{
+					Trello.boards.get(boardId + "/actions?filter=createCard,commentCard"
+						, function(actions)
+						{
+							parseActions(actions);
+						}
+					);
+				}
+				
+				
+				if(members == null)
+				{
+					Trello.boards.get(boardId + "/members"
+						, function(members)
+						{
+							parseMembers(members);
+						}
+					);
+				}
+				
+				if(cards == null)
+				{
+					Trello.boards.get(boardId + "/cards"
+						, function(cards)
+						{
+							parseCards(cards);
+						}
+					);
+				}
+			}
+			
+			function parseBoard(board)
+			{
+				var json = board;
+				selectedBoard = json;
+			}
+			
+			function parseBoards(boards)
+			{
+				var json = boards;
+				var json_parsed = $.parseJSON(json);
+				
+				for(var i = 0; i < json.length; i++)
+				{
+					$("#selected_board").append("<option value=\"" + json[i].id + "\">" + json[i].name + "</option>");
+				}
+				
+			}
+			
+			function parseLists(json_parsed)
+			{
+				console.log("Have " + json_parsed.length + " Lists: " + json_parsed);
+				lists = json_parsed;
+			}
+			
+			function parseActions(json_parsed)
+			{
+				console.log("Have " + json_parsed.length + " Actions: " + json_parsed);
+				actions = json_parsed;
+			}
+			
+			function parseMembers(json_parsed)
+			{
+				console.log("Have " + json_parsed.length + " Members: " + json_parsed);
+				members = json_parsed;
+			}
+			
+			function parseCards(json_parsed)
+			{
+				console.log("Have " + json_parsed.length + " Cards: " + json_parsed);
+				cards = json_parsed;
+			}
+			
+			function getListById(listId)
+			{
+					for(var i = 0; i < lists.length; i++)
+					{
+						var list = lists[i];
+						
+						if(list.id == listId)
+						{
+							return list.name;
+						}	
+					}
+					
+					return null;
+			}
+			
+			function getMemberById(memberId)
+			{
+					for(var i = 0; i < members.length; i++)
+					{
+						var member = members[i];
+						
+						if(member.id == memberId)
+						{
+							return member;
+						}
+					}
+					
+					console.log("Can't find member with id: " + memberId);
+					
+					return null;
+			}
+			
+			function renderReport()
+			{
+				
+				$("#data").empty();
+				
+				try
+				{
+					
+					$("#data").append("<div class=\"boardName\">" 
+							+ selectedBoard.name
+							+ "</div>");
+							
+					$("#data").append("<div class=\"boardDesc\">" 
+							+ selectedBoard.desc
+							+ "</div>");
+					
+					$("#data").append("<div id=\"lists_menu\" class=\"menu\"></div>");		
+					
+					for(var i = 0; i < lists.length; i++)
+					{
+						var list = lists[i];
+						
+						$("#data").append("<div class=\"list\" id=\"" + list.id + "\">" 
+							+ "<div class=\"listName\"><a id=\"list_menuItem_" + list.id + "\">" + list.name + "</a></div>"
+							+ "<div class=\"cardsWrapper\" id=\"cardsWrapper_" + list.id + "\"></div>"
+							+ "<div class=\"listFooter\"></div>"
+							+ "</div>");
+						
+						$("#data").append("<div class=\"page-break\"></div>");
+						
+					}
+					
+					for (var u = 0; u < cards.length; u++)
+					{
+						var card = cards[u];
+						
+						var listId = getListById(card.idList);
+						
+						var cardCssClass;
+						
+						if(u%2 == 0)
+						{
+							cardCssClass = "card";
+						}
+						else
+						{
+							cardCssClass = "card";
+						}
+						
+						$("#cardsWrapper_" + card.idList).append("<div class=\"" + cardCssClass + "\" id=\"" + card.idShort + "\"></div>")
+						
+						$("#" + card.idShort).append("<div class=\"cardName\">Item #" + card.idShort + ": " + card.name + "</div>");
+						$("#" + card.idShort).append("<div class=\"cardDesc\">" + card.desc + "</div>");
+						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_comments" + "\" class=\"cardCommentsWrapper\"></div>");
+						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_details" + "\" class=\"cardDetails\">" + "</div>");
+						
+						/*
+						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_url" + "\" class=\"cardDetails cardDetails_url\">" 
+							+ "<a href=\"" + card.shortUrl + "\">" + card.shortUrl + "</a></div>");
+						*/
+						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_url" + "\" class=\"cardDetails cardDetails_url\">" 
+							+ "<a href=\"" + card.shortUrl + "\">http://trello.com/c/FakeURl</a></div>");
+							
+						if(u%4 == 0)
+						{
+							$("#" + card.idShort).append("<div class=\"page-break\"></div>");
+						}
+							
+					}
+					
+					//parseActions(json_parsed);
+					
+					for(var i = 0; i < actions.length; i++)
+					{
+						var action = actions[i];
+						
+						if(action.type == "commentCard")
+						{
+							
+							var cardCommentCSSClass = "cardComment";
+							
+							var cardDomId = action.data.card.idShort;
+							var cardCommentsHolderDomId = action.data.card.idShort + "_comments";
+							
+							// Determine whether comments DIV has been added, if not create it.  Otherwise, determine the number of comments.
+							if($("#" + cardDomId).children("#" + cardCommentsHolderDomId).length > 0)
+							{
+								var children = $("#" + cardCommentsHolderDomId).children().length;
+								
+								console.log("Have " + children + " comments.");
+								
+								if((children + 1)%2 == 0)
+								{
+									cardCommentCSSClass = "cardComment";
+								}
+								else
+								{
+									cardCommentCSSClass = "cardComment";
+								}
+							}
+							
+							
+							$("#" + cardCommentsHolderDomId).append("<div class=\"" + cardCommentCSSClass + "\" id=\"" + action.id + "\"></div>");
+							$("#" + action.id).append("<u>On " + action.date.substring(0, 10) 
+								+ " at " + action.date.substring(11, 19) 
+								+ " <b>" + getMemberById(action.idMemberCreator).fullName 
+								+ "</b> commented</u>: <br/>" + action.data.text);
+						}
+						else if(action.type == "createCard")
+						{
+							
+							console.log("Appending " + action.type + " to " + "#" + action.data.card.idShort + "_details");
+							
+							$("#" + action.data.card.idShort + "_details").append("Created on " + action.date.substring(0, 10) 
+								+ " at " + action.date.substring(11, 19) 
+								+ " by <b>" + getMemberById(action.idMemberCreator).fullName + "</b>");
+						}
+						else
+						{
+							console.log("Nowhere to put " + action.type);
+						}
+					}
+					
+					for(var i = 0; i < lists.length; i++)
+					{
+						var list = lists[i];
+						
+						if($("#" + "cardsWrapper_" + list.id).children(".card").length == 0)
+						{
+							$("#" + list.id).append("<center>No cards in this list.</center>");
+						}
+					}
+					
+					var menuHtml = "";
+					
+					for(var i = 0; i < lists.length; i++)
+					{
+						var list = lists[i];
+						
+						var cardCount = $("#" + "cardsWrapper_" + list.id).children(".card").length
+						
+						if(i < (lists.length - 1))
+						{
+							menuHtml += "<a href=\"#list_menuItem_" + list.id + "\">" + list.name + " (" + cardCount + ")</a> | ";
+						}
+						else
+						{
+							menuHtml += "<a href=\"#list_menuItem_" + list.id + "\">" + list.name + " (" + cardCount + ")</a>";
+						}
+						
+						$("#data").append("<div class=\"page-break\"></div>");
+						
+					}
+					
+					$("#lists_menu").append(menuHtml);
+					
+					
+				}
+				catch(error)
+				{
+					alert("Error Rendering Report - " + error.name + ": " + error.message);
+				}
+				
+			}
+			
+		</script>
+		
+		<link type="text/css" rel="stylesheet" href="css/default.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="css/print.css" media="print" />
+    
+	</head>
+	
+	<body>
+		
+		<div id="login">
+		
+			<input type="button" id="authorize_page" value="Authorize Page" onClick="authorize();"/>
+		
+		</div>
+		
+		<div id="generate">
+		
+			<form>
+			
+				<select id="selected_board">
+				
+				</select>
+				
+				<input type="button" id="generate_report" value="Generate Report" onClick="prepareReport(true);"/>
+				
+				<input type="button" id="generate_report" value="Render Report" onClick="renderReport();"/>
+				
+			</form>
+			
+		</div>
+		
+		<div id="data">
+			
+		</div>
+		
+	</body>
+
+</html>

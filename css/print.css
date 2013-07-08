@@ -1,0 +1,144 @@
+﻿body {
+    padding:                0px;
+    margin:                 0px;
+    background-color:       #FFFFFF;
+    text-align:             center;
+    width:                  100%;
+    height:                 100%;
+    background-position:    top center;
+    background-repeat:      repeat-y;
+}
+
+div#login
+{
+	visibility:hidden;
+	display:none;
+}
+
+div#generate
+{
+	visibility:hidden;
+	display:none;
+}
+
+div.boardName
+{
+	font-family:        Verdana;
+    font-size: 20pt;	
+	font-weight: 900;
+	width:75%;
+	margin-left:auto;
+	margin-right:auto;
+	padding-top:10px;
+	padding-bottom: 10px;
+}
+
+div.boardDesc
+{
+	font-family:        Verdana;
+    font-size: 12pt;	
+	font-style: italic;
+	width:75%;
+	margin-left:auto;
+	margin-right:auto;
+	padding-bottom:10px;
+}
+
+div.menu
+{
+	visibility: hidden;
+	display:none;
+}
+
+
+div.list
+{
+	font-family:        Verdana;
+    font-size: 16pt;
+}
+
+div.listName
+{
+	font-weight:900;
+	padding: 10px;
+	width:75%;
+	border-bottom: 2px solid #000000;
+	margin-left:auto;
+	margin-right:auto;
+	text-align:left;
+}
+
+div.listFooter
+{
+	width:100%;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+div.card
+{
+	
+	border: 1px inset #000000;
+	text-align:left;
+	width:75%;
+	padding:10px;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top:10px;
+}
+
+div.cardName
+{
+	
+	font-family:        Verdana;
+    font-size: 12pt;
+	font-weight: 900;
+	border-bottom: 2px solid #000000;
+}
+
+div.cardDesc
+{
+	font-family:        Verdana;
+    font-size: 10pt;
+	font-weight: 0;
+	padding-top:10px;
+}
+
+div.cardDetails
+{
+	font-family:        Verdana;
+    font-size: 8pt;
+	font-weight: 0;
+	padding-top:2px;
+	text-align: right;
+}
+
+div.cardDetails_url
+{
+	visibility:hidden;
+}
+
+div.cardCommentsWrapper
+{
+	margin:10px;
+	font-weight:0;
+}
+
+div.cardComment
+{
+	font-family: Verdana;
+    font-size: 10pt;
+	font-weight: none;
+	padding:5px;
+}
+
+a:link, a:active, a:visited { 
+    color :                 #125E94; 
+    font-weight: bold;
+    text-decoration:        none;
+}
+
+a:hover {
+    color:                  Black; 
+    text-decoration:        none;
+}
