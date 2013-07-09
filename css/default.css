@@ -99,7 +99,6 @@ div.card
 	border: 1px inset #000000;
 	text-align:left;
 	width:75%;
-	padding:10px;
 	margin-left:auto;
 	margin-right:auto;
 	margin-top:10px;
@@ -112,6 +111,7 @@ div.cardName
     font-size: 12pt;
 	font-weight: 900;
 	border-bottom: 2px solid #000000;
+	padding:10px;
 }
 
 div.cardDesc
@@ -119,7 +119,7 @@ div.cardDesc
 	font-family:        Verdana;
     font-size: 10pt;
 	font-weight: 0;
-	padding-top:10px;
+	padding:10px;
 }
 
 div.cardDetails
@@ -127,11 +127,28 @@ div.cardDetails
 	font-family:        Verdana;
     font-size: 8pt;
 	font-weight: 0;
+	padding-right:10px;
 	padding-top:2px;
+	padding-bottom:2px;
 	text-align: right;
 }
 
+div.cardLabels
+{
+	text-align: center;
+	font-family:        Verdana;
+    font-size: 10pt;
+	font-weight: 900;
+	margin-top:0px;
+	width:100%;
+	
+}
 
+div.cardLabel
+{
+	background-color: #000000;
+	padding:2px;
+}
 
 div.cardCommentsWrapper
 {
@@ -145,6 +162,33 @@ div.cardComment
     font-size: 10pt;
 	font-weight: none;
 	padding:5px;
+}
+
+div.member
+{
+	border: 1px solid #000000;
+	float: left;
+	clear: right;
+	margin: 5px;
+	padding: 2px;
+	width: 200px;
+}
+
+div.membersWrapperWrapper
+{
+	width:100%;
+}
+
+div.membersWrapper
+{
+	width:75%;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+img.attachmentPreview
+{
+	padding-top:5px;
 }
 
 a:link, a:active, a:visited { 

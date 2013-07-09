@@ -5,9 +5,9 @@
 		
 		<title>Trello Report Generator</title>
 		
-		<script src="js/jquery-2.0.3.js"></script>
+		<!-- <script src="js/jquery-2.0.3.js"></script> -->
 		<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
-		<script src="https://api.trello.com/1/client.js?key=7de7aa03bc8c09f287f59f1354fcdf4d"></script>
+		<script src="https://api.trello.com/1/client.js?key=XXX"></script>
 		
 		<script type="text/javascript">
 			
@@ -20,22 +20,49 @@
 			var members;
 			var cards;
 			
-			function authorize()
+			var listsLoaded = false;
+			var actionsLoaded = false;
+			var membersLoaded = false;
+			var cardsLoaded = false;
+			
+			$("#authorize_page").click(requestAuthorization);
+			
+			Trello.authorize
+			({
+				interactive:false
+				, success: onAuthorize
+			});
+			
+			
+			var requestAuthorization = function ()
 			{
+				
+				console.log("Requesting authorization");
+				
 				Trello.authorize
 				({
-					type:"popup"
-					, interactive:true
-					, name: "Trello Reports"
-					, success: onAuthorization
+					name: "Trello Reporting"
+					//, type:"popup"
+					, success: onAuthorize
 					, error: onAuthorizationError
+					, scope:
+					{
+						read: true
+						, write: false
+						, account: true
+					}
 				});
 				
 				
-			}
+			};
 			
-			var onAuthorization = function()
+			var onAuthorize = function()
 			{
+				
+				console.log("Have authorization");
+				
+				updateLoggedIn();
+				
 				Trello.members.get("my/boards/all"
 					, function(boards)
 					{
@@ -49,9 +76,15 @@
 				alert("Not Authorized!");
 			}
 			
+			var updateLoggedIn = function() 
+			{
+				var isLoggedIn = Trello.authorized();
+				//$("#loggedout").toggle(!isLoggedIn);
+				//$("#loggedin").toggle(isLoggedIn);        
+			};
+			
 			function prepareReport(clean)
 			{
-				
 				if(clean)
 				{
 					selectedBoard = null;
@@ -59,6 +92,12 @@
 					actions = null;
 					members = null;
 					cards = null;
+					
+					listsLoaded = false;
+					actionsLoaded = false;
+					membersLoaded = false;
+					cardsLoaded = false;
+					
 				}
 				
 				$("#data").empty();
@@ -67,7 +106,6 @@
 				
 				if(selectedBoard == null)
 				{
-				
 					Trello.boards.get(boardId
 						, function(board)
 						{
@@ -83,16 +121,18 @@
 						, function(lists)
 						{
 							parseLists(lists);
+							renderReport();
 						}
 					);
 				}
 				
 				if(actions == null)
 				{
-					Trello.boards.get(boardId + "/actions?filter=createCard,commentCard"
+					Trello.boards.get(boardId + "/actions?filter=createCard,commentCard,addAttachmentToCard"
 						, function(actions)
 						{
 							parseActions(actions);
+							renderReport();
 						}
 					);
 				}
@@ -101,9 +141,14 @@
 				if(members == null)
 				{
 					Trello.boards.get(boardId + "/members"
+						, 
+						{
+							fields: "all"
+						}
 						, function(members)
 						{
 							parseMembers(members);
+							renderReport();
 						}
 					);
 				}
@@ -114,6 +159,7 @@
 						, function(cards)
 						{
 							parseCards(cards);
+							renderReport();
 						}
 					);
 				}
@@ -134,31 +180,48 @@
 				{
 					$("#selected_board").append("<option value=\"" + json[i].id + "\">" + json[i].name + "</option>");
 				}
-				
+			
+			}
+			
+			function getFileExtension(filename)
+			{
+				return filename.substring(filename.lastIndexOf(".") + 1);
 			}
 			
 			function parseLists(json_parsed)
 			{
 				console.log("Have " + json_parsed.length + " Lists: " + json_parsed);
 				lists = json_parsed;
+				
+				listsLoaded = true;
+				
 			}
 			
 			function parseActions(json_parsed)
 			{
 				console.log("Have " + json_parsed.length + " Actions: " + json_parsed);
 				actions = json_parsed;
+				
+				actionsLoaded = true;
+				
 			}
 			
 			function parseMembers(json_parsed)
 			{
 				console.log("Have " + json_parsed.length + " Members: " + json_parsed);
 				members = json_parsed;
+				
+				membersLoaded = true;
+								
 			}
 			
 			function parseCards(json_parsed)
 			{
 				console.log("Have " + json_parsed.length + " Cards: " + json_parsed);
 				cards = json_parsed;
+				
+				cardsLoaded = true;
+				
 			}
 			
 			function getListById(listId)
@@ -198,6 +261,14 @@
 				
 				$("#data").empty();
 				
+				if(!listsLoaded
+					|| !actionsLoaded
+					|| !membersLoaded
+					|| !cardsLoaded)
+				{
+					return;
+				}
+				
 				try
 				{
 					
@@ -225,6 +296,9 @@
 						
 					}
 					
+					$("#data").append("<div id=\"membersWrapperWrapper\"</div>");
+					$("#membersWrapperWrapper").append("<div id=\"membersWrapper_0\" class=\"membersWrapper\"></div>");
+					
 					for (var u = 0; u < cards.length; u++)
 					{
 						var card = cards[u];
@@ -244,18 +318,38 @@
 						
 						$("#cardsWrapper_" + card.idList).append("<div class=\"" + cardCssClass + "\" id=\"" + card.idShort + "\"></div>")
 						
+						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_labels" + "\" class=\"cardLabels\">" + "</div>");
 						$("#" + card.idShort).append("<div class=\"cardName\">Item #" + card.idShort + ": " + card.name + "</div>");
 						$("#" + card.idShort).append("<div class=\"cardDesc\">" + card.desc + "</div>");
 						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_comments" + "\" class=\"cardCommentsWrapper\"></div>");
 						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_details" + "\" class=\"cardDetails\">" + "</div>");
-						
-						/*
 						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_url" + "\" class=\"cardDetails cardDetails_url\">" 
 							+ "<a href=\"" + card.shortUrl + "\">" + card.shortUrl + "</a></div>");
-						*/
-						$("#" + card.idShort).append("<div id=\"" + card.idShort + "_url" + "\" class=\"cardDetails cardDetails_url\">" 
-							+ "<a href=\"" + card.shortUrl + "\">http://trello.com/c/FakeURl</a></div>");
-							
+						
+						var labels = card.labels;
+						
+						console.log("Labels: " + labels);
+						
+						if(labels != null && labels.length > 0)
+						{
+							for(var labelIdx = 0; labelIdx < labels.length; labelIdx++)
+							{
+								label = labels[labelIdx];
+								
+								var labelDivId = "cardLabel_" + card.idShort + "_" + label.color;
+								
+								$("#" + card.idShort + "_labels").append("<div id=\"" + labelDivId + "\" class=\"cardLabel\">" + label.name + "</div>");
+								$("#" + labelDivId).css("background-color", label.color);
+								
+								if(label.color.toUpperCase() == "RED")
+								{
+									$("#" + labelDivId).css("color", "#FFFFFF");
+								}
+								
+							}
+						}
+
+						
 						if(u%4 == 0)
 						{
 							$("#" + card.idShort).append("<div class=\"page-break\"></div>");
@@ -271,7 +365,6 @@
 						
 						if(action.type == "commentCard")
 						{
-							
 							var cardCommentCSSClass = "cardComment";
 							
 							var cardDomId = action.data.card.idShort;
@@ -300,6 +393,45 @@
 								+ " at " + action.date.substring(11, 19) 
 								+ " <b>" + getMemberById(action.idMemberCreator).fullName 
 								+ "</b> commented</u>: <br/>" + action.data.text);
+						}
+						else if(action.type == "addAttachmentToCard")
+						{
+							console.log("Attachment: " + action);
+							
+							var cardDomId = action.data.card.idShort;
+							var cardCommentsHolderDomId = action.data.card.idShort + "_comments";
+							var cardCommentCSSClass = "cardComment";
+							
+							$("#" + cardCommentsHolderDomId).append("<div class=\"" + cardCommentCSSClass + "\" id=\"" + action.id + "\"></div>");
+							
+							var attachmentDetails = "<u>On " + action.date.substring(0, 10) 
+								+ " at " + action.date.substring(11, 19) 
+								+ " <b>" + getMemberById(action.idMemberCreator).fullName 
+								+ "</b> added an attachment</u>: ";
+							
+							var fileName = action.data.attachment.name;
+							
+							if(getFileExtension(fileName).toUpperCase() == "PNG"
+								|| getFileExtension(fileName).toUpperCase() == "JPG"
+								|| getFileExtension(fileName).toUpperCase() == "JPEG"
+								|| getFileExtension(fileName).toUpperCase() == "BMP"
+								|| getFileExtension(fileName).toUpperCase() == "GIF")
+							{
+								attachmentDetails += "<br/><center><a href=\"" + action.data.attachment.url + "\" target=\"_newWindow\">"
+									+ "<img class=\"attachmentPreview\" src=\"" + action.data.attachment.previewUrl + "\"/>"
+									+ "</a></center>";
+							}
+							else
+							{
+								attachmentDetails += "<a href=\"" + action.data.attachment.url + "\" target=\"_newWindow\">"
+									+ fileName
+									+ "</a>";	
+							}
+							
+							
+							
+							$("#" + action.id).append(attachmentDetails);
+							
 						}
 						else if(action.type == "createCard")
 						{
@@ -349,6 +481,39 @@
 					
 					$("#lists_menu").append(menuHtml);
 					
+					var wrapperCount = 0;
+					
+					for(var i = 0; i < members.length; i++)
+					{
+						var member = members[i];
+						
+						$("#membersWrapper_" + wrapperCount).append("<div class=\"member\">"
+							+ member.fullName
+							+ "<br/>"
+							+ member.username
+							+ " | "
+							+ member.initials
+							+ "</div>");
+							
+						if((i+1)%2 == 0)
+						{
+							var width = jQuery.trim($("div.member").css("width").replace("px", ""));
+							var margin = jQuery.trim($("div.member").css("margin").replace("px", ""));
+							var wrapperWidth = Number((Number(width) + Number(margin) + (Number(margin) * Number(3))) * Number(members.length));
+							$("#membersWrapper_" + wrapperCount).css("width", wrapperWidth + "px");
+							
+							wrapperCount += 1;
+							$("#membersWrapperWrapper").append("<div id=\"membersWrapper_" + wrapperCount + "\" class=\"membersWrapper\"></div>");
+						}
+						
+					}
+					
+					var width = jQuery.trim($("div.member").css("width").replace("px", ""));
+					var margin = jQuery.trim($("div.member").css("margin").replace("px", ""));
+					var wrapperWidth = Number((Number(width) + Number(margin) + (Number(margin) * Number(3))) * Number(members.length));
+					$("#membersWrapper_" + wrapperCount).css("width", wrapperWidth + "px");
+					
+					
 					
 				}
 				catch(error)
@@ -369,7 +534,7 @@
 		
 		<div id="login">
 		
-			<input type="button" id="authorize_page" value="Authorize Page" onClick="authorize();"/>
+			<a id="authorize_page" href="javascript:requestAuthorization();">Authorize Trello Reporting</a>
 		
 		</div>
 		
@@ -381,8 +546,8 @@
 				
 				</select>
 				
-				<input type="button" id="generate_report" value="Generate Report" onClick="prepareReport(true);"/>
 				
+				<input type="button" id="generate_report" value="Generate Report" onClick="prepareReport(true);"/>
 				<input type="button" id="generate_report" value="Render Report" onClick="renderReport();"/>
 				
 			</form>
@@ -390,7 +555,6 @@
 		</div>
 		
 		<div id="data">
-			
 		</div>
 		
 	</body>

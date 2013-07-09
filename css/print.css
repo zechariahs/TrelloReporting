@@ -132,6 +132,44 @@ div.cardComment
 	padding:5px;
 }
 
+div.cardLabels
+{
+	text-align: center;
+	font-family:        Verdana;
+    font-size: 10pt;
+	font-weight: 900;
+	margin-top:0px;
+	width:100%;
+	
+}
+
+div.cardLabel
+{
+	background-color: #000000;
+	margin-bottom: 5px;
+}
+
+
+div.member
+{
+	display:none;
+}
+
+div.membersWrapperWrapper
+{
+	display:none;
+}
+
+div.membersWrapper
+{
+	display:none;
+}
+
+img.attachmentPreview
+{
+	padding-top:5px;
+}
+
 a:link, a:active, a:visited { 
     color :                 #125E94; 
     font-weight: bold;
