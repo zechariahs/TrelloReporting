@@ -21,6 +21,12 @@ div#generate
 	display:none;
 }
 
+div.viewOptions
+{
+	visibility:hidden;
+	display:none;
+}
+
 div.boardName
 {
 	font-family:        Verdana;
@@ -55,6 +61,8 @@ div.list
 {
 	font-family:        Verdana;
     font-size: 16pt;
+	page-break-after: always;
+	
 }
 
 div.listName
@@ -73,6 +81,7 @@ div.listFooter
 	width:100%;
 	margin-left:auto;
 	margin-right:auto;
+	
 }
 
 div.card
@@ -85,6 +94,7 @@ div.card
 	margin-left:auto;
 	margin-right:auto;
 	margin-top:10px;
+	page-break-inside: avoid;
 }
 
 div.cardName
@@ -111,11 +121,6 @@ div.cardDetails
 	font-weight: 0;
 	padding-top:2px;
 	text-align: right;
-}
-
-div.cardDetails_url
-{
-	visibility:hidden;
 }
 
 div.cardCommentsWrapper
