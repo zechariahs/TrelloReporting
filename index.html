@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
@@ -7,7 +7,7 @@
 		
 		<!-- <script src="js/jquery-2.0.3.js"></script> -->
 		<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
-		<script src="https://api.trello.com/1/client.js?key=XXX"></script>
+		<script src="https://api.trello.com/1/client.js?key=7de7aa03bc8c09f287f59f1354fcdf4d"></script>
 		
 		<script type="text/javascript">
 			
@@ -19,6 +19,8 @@
 			var actions = new Array();
 			var members;
 			var cards;
+			var cardMembers;
+			var cardChecklists;
 			
 			var listsLoaded = false;
 			var actionsLoaded = false;
@@ -34,6 +36,14 @@
 				interactive:false
 				, success: onAuthorize
 			});
+			
+			function pausecomp(millis)
+			{
+				var date = new Date();
+				var curDate = null;
+				do { curDate = new Date(); }
+				while(curDate-date < millis);
+			}
 			
 			function onLoad()
 			{
@@ -318,6 +328,26 @@
 						);
 			}
 			
+			function getMembersForCard(cardId, cardIdShort, cardPrefix)
+			{
+				Trello.cards.get(cardId + "/members?fields=all"
+							, function(membersForCard)
+							{
+								renderMembersForCard(membersForCard, cardPrefix, cardIdShort);
+							}
+						);
+			}
+			
+			function getChecklistsForCard(cardId, cardIdShort, cardPrefix)
+			{
+				Trello.cards.get(cardId + "/checklists?fields=all"
+							, function(checklistsForCard)
+							{
+								renderChecklistsForCard(checklistsForCard, cardPrefix, cardIdShort);
+							}
+						);
+			}
+			
 			function renderActionsForCard(actions, cardPrefix)
 			{
 				for(var i = 0; i < actions.length; i++)
@@ -378,9 +408,19 @@
 							|| getFileExtension(fileName).toUpperCase() == "BMP"
 							|| getFileExtension(fileName).toUpperCase() == "GIF")
 						{
-							attachmentDetails += "<br/><center><a href=\"" + action.data.attachment.url + "\" target=\"_newWindow\">"
-								+ "<img class=\"attachmentPreview\" src=\"" + action.data.attachment.previewUrl + "\"/>"
-								+ "</a></center>";
+							attachmentDetails += "<br/><center><a href=\"" + action.data.attachment.url + "\" target=\"_newWindow\">";
+							
+							if(action.data.attachment.previewUrl)
+							{
+								attachmentDetails += "<img class=\"attachmentPreview\" src=\"" + action.data.attachment.previewUrl + "\"/>";
+							}
+							else
+							{
+								attachmentDetails += action.data.attachment.url;
+							}
+							
+							attachmentDetails += "</a></center>";
+							
 						}
 						else
 						{
@@ -410,6 +450,118 @@
 				}
 			}
 			
+			function renderMembersForCard(membersForCard, cardPrefix, cardIdShort)
+			{
+				
+				var membersString = "Assigned To: ";
+				
+				var cardDomId = cardPrefix + cardIdShort;
+				var cardMembersHolderDomId = cardPrefix + cardIdShort + "_members";
+				var cardMembersCSSClass = "cardMembers";
+				
+				var hasMembers = false;
+				
+				console.log("Appending " + membersForCard.length + " members to card " + cardDomId + " using " + cardMembersHolderDomId);
+				
+				for(var i = 0; i < membersForCard.length; i++)
+				{
+					var member = membersForCard[i];
+					
+					hasMembers = true;
+					
+					var memberName = member.fullName;
+					
+					if(i < (membersForCard.length - 1))
+					{
+						membersString += "<b>" + memberName + "</b>" + ", ";
+					}
+					else
+					{
+						membersString += "<b>" + memberName + "</b>";
+					}
+				}
+				
+				if(!hasMembers)
+				{
+					membersString = "<b>Not assigned</b>";
+				}
+				
+				$("#" + cardMembersHolderDomId).append(membersString);
+			}
+			
+			function renderChecklistsForCard(checklistsForCard, cardPrefix, cardIdShort)
+			{
+				
+				console.log("Adding " + checklistsForCard.length + " checklist(s) to card #" + cardIdShort + " at " + cardPrefix);
+				
+				var cardDomId = cardPrefix + cardIdShort;
+				var cardChecklistsHolderDomId = cardPrefix + cardIdShort + "_checklists";
+				var cardMembersCSSClass = "cardChecklist";
+				
+				for(var i = 0; i < checklistsForCard.length; i++)
+				{
+					var checklist = checklistsForCard[i];
+					
+					var checklistHtml;
+					
+					var hasItems = false;
+					
+					console.log("Checklist: " + checklist);
+					
+					if(i == 0)
+					{
+						checklistHtml = "<span class=\"checklistHeader\">" + checklist.name + "<br/></span>";
+					}
+					else
+					{
+						checklistHtml = "<br/>";
+						checklistHtml += "<span class=\"checklistHeader\">" + checklist.name + "<br/></span>";
+					}
+					
+					var checklistItems = checklist.checkItems;
+					
+					checklistItems.sort(function(a,b)
+					{
+						if(a.pos > b.pos)
+						{ 
+							return 1;
+						}
+						
+						if(a.pos < b.pos)
+						{ 
+							return -1;
+						}
+						
+						return 0;
+					});
+					
+					for(var x = 0; x < checklistItems.length; x++)
+					{
+						var checklistItem = checklistItems[x];
+						
+						hasItems = true;
+						
+						if(checklistItem.state == "complete")
+						{
+							checklistHtml += "<input type=\"checkbox\" CHECKED disabled=\"true\"><label class=\"checklistItem\">" + checklistItem.name + "</label></input><br/>";
+						}
+						else
+						{
+							checklistHtml += "<input type=\"checkbox\" disabled=\"true\"><label class=\"checklistItem\">" + checklistItem.name + "</label></input><br/>";
+						}
+						
+					}
+					
+					if(hasItems)
+					{
+						$("#" + cardChecklistsHolderDomId).append(checklistHtml);
+					}
+					
+				}
+				
+				// $("#" + cardMembersHolderDomId).append(membersString);
+			}
+			
 			function renderCard(card, cardIdx, cardsWrapperPrefix, cardPrefix)
 			{
 				
@@ -429,12 +581,14 @@
 				$("#" + cardsWrapperPrefix).append("<div class=\"" + cardCssClass + "\" id=\"" + cardPrefix + card.idShort + "\"></div>")
 				
 				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_labels" + "\" class=\"cardLabels\">" + "</div>");
-				$("#" + cardPrefix + card.idShort).append("<div class=\"cardName\">Item #" + card.idShort + ": " + card.name + "</div>");
+				$("#" + cardPrefix + card.idShort).append("<div class=\"cardName\">Item #" + card.idShort + ": " + card.name + " -- Due: " + card.due + "</div>");
 				$("#" + cardPrefix + card.idShort).append("<div class=\"cardDesc\">" + card.desc + "</div>");
+				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_checklists" + "\" class=\"cardChecklistsWrapper\"></div>");
 				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_comments" + "\" class=\"cardCommentsWrapper\"></div>");
+				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_members" + "\" class=\"cardMembers\"></div>");
 				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_details" + "\" class=\"cardDetails\">" + "</div>");
-				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_url" + "\" class=\"cardDetails cardDetails_url\">" 
-					+ "<a href=\"" + card.shortUrl + "\">" + card.shortUrl + "</a></div>");
+				$("#" + cardPrefix + card.idShort).append("<div id=\"" + cardPrefix + card.idShort + "_url" + "\" class=\"cardDetails_url\">" 
+					+ "<a href=\"" + card.shortUrl + "\">View Card</a></div>");
 				
 				var labels = card.labels;
 				
@@ -460,12 +614,27 @@
 					}
 				}
 				
+				
+				let pause = 250
+				
 				getActionsForCard(card.id, cardPrefix);
+				
+				pausecomp(pause);
+				
+				getMembersForCard(card.id, card.idShort, cardPrefix);
+				
+				pausecomp(pause);
+				
+				getChecklistsForCard(card.id, card.idShort, cardPrefix);
+				
+				pausecomp(pause);
 				
 				if(cardIdx%4 == 0)
 				{
 					$("#" + cardPrefix + card.idShort).append("<div class=\"page-break\"></div>");
+					
 				}
+
 						
 				
 			}
@@ -530,6 +699,34 @@
 						$("#data").append("<div class=\"page-break\"></div>");
 						
 					}
+					
+					cards.sort(function(a,b)
+					{
+						
+						/*
+						if(a.idShort > b.idShort)
+						{ 
+							return 1;
+						}
+						
+						if(a.idShort < b.idShort)
+						{ 
+							return -1;
+						}
+						*/
+						
+						if(a.due > b.due)
+						{ 
+							return 1;
+						}
+						
+						if(a.due < b.due)
+						{ 
+							return -1;
+						}
+						
+						return 0;
+					});
 					
 					for (var u = 0; u < cards.length; u++)
 					{
